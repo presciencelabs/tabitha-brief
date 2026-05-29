@@ -1,0 +1,15 @@
+{
+  "name": "tabitha-brief",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@types/bun": "latest",
+    "@google/genai": "^1.44.0",
+    "pdfmkr": "^0.5.4"
+  }
+}

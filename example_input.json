@@ -1,0 +1,20 @@
+{
+	"bookName": "Titus",
+	"chapterNo": 2,
+	"verseNo": 11,
+
+	"lwcName": "English",
+	"mttLevel": "high_school",
+	"showEnglish": true,
+	"showNoteSources": false,
+
+	"vernacularProfile": {
+		"rhetorical_questions": true,
+		"clusivity": true,
+		"passive": true,
+		"dual": true,
+		"trial": true,
+		"honorifics": true,
+		"indirect_speech": true
+	}
+}
