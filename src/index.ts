@@ -2,6 +2,13 @@
 import { PdfMaker, type Block, type ColumnsBlock, type DocumentDefinition, type TextBlock, text } from 'pdfmkr'
 import { GoogleGenAI } from '@google/genai'
 
+// http utilities
+
+function validateHttpResponse(response: Response) {
+	if (!response.ok)
+		throw new Error(`HTTP error: received response of status ${response.status} (${response.statusText}) from ${response.url}`)
+}
+
 // ai utilities
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY_GEMINI })
@@ -44,6 +51,7 @@ async function getAquiferContentIds(params): Promise<number[]> {
 		endVerse: params.verseNo
 	})
 	const response = await aquiferFetch('/resources/search', queryParams)
+	validateHttpResponse(response);
 	return (await response.json()).items.map(({id}) => id)
 }
 
@@ -123,6 +131,7 @@ const usfmBookCodeByBookName = [
 
 async function getSource(params): Promise<string> {
 	const response = await fetch(`https://targets.tabitha.bible/${params.lwcName}/${params.bookName}/${params.chapterNo}/${params.verseNo}`)
+	validateHttpResponse(response);
 	const json = await response.json()
 	return json.filter(({ audience, text }) => { return audience == 'Unchurched Adults' })[0].text
 }
@@ -137,8 +146,8 @@ async function getQuestions(params): Promise<string[]> {
 			show_note_sources: params.showNoteSources
 		}),
 	})
-	const response = await fetch(`https://copilot-dev.tabitha.bible/${params.bookName}/${params.chapterNo}/${params.verseNo}?${queryParams.toString()}`,
-	)
+	const response = await fetch(`https://copilot-dev.tabitha.bible/${params.bookName}/${params.chapterNo}/${params.verseNo}?${queryParams.toString()}`)
+	validateHttpResponse(response);
 	const json = await response.json()
 	return json.cautions.map(({ note, source }) => note)
 }
@@ -151,6 +160,7 @@ async function getTnnBasedInfo(params): Promise<any> {
 			"api-key": process.env.API_KEY_AQUIFER,
 		},
 	})
+	validateHttpResponse(response);
 	const prompt = await response.text()
 
 	const systemPrompt = await Bun.file('prompts/tnn-system.txt').text()
