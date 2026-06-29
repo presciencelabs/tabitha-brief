@@ -221,36 +221,42 @@ function composeUnorderedList(questions: string[]): Block[] {
 // main
 
 const input = await Bun.stdin.json()
-
+const tbtaSource = await getSource(input)
+const copilotQuestions = await getQuestions(input)
 const tnnBasedInfo = JSON.parse(await getTnnBasedInfo(input))
 
-const doc: DocumentDefinition = {
-	defaultStyle: TEXT,
-	content: [
-		text('TaBiThA Brief', TITLE),
-		text(`${input.bookName} ${input.chapterNo}:${input.verseNo} · ${input.lwcName}`, SUBTITLE),
+if (input.outputDocument == 'proofOfConcept') {
+	const doc: DocumentDefinition = {
+		defaultStyle: TEXT,
+		content: [
+			text('TaBiThA Brief', TITLE),
+			text(`${input.bookName} ${input.chapterNo}:${input.verseNo} · ${input.lwcName}`, SUBTITLE),
 
-		text('3 \u2014 TBTA LWC Rendering with Alternates', H1),
-		...composeText(await getSource(input)),
+			text('3 \u2014 TBTA LWC Rendering with Alternates', H1),
+			...composeText(tbtaSource),
 
-		text('2 \u2014 Probing Discussion Questions', H1),
-		...composeUnorderedList(await getQuestions(input)),
+			text('2 \u2014 Probing Discussion Questions', H1),
+			...composeUnorderedList(copilotQuestions),
 
-		text('4 \u2014 Extracted TNN Notes', H1),
-		...composeText(tnnBasedInfo.section1),
+			text('4 \u2014 Extracted TNN Notes', H1),
+			...composeText(tnnBasedInfo.section1),
 
-		text('5 \u2014 Cultural Context Summary', H1),
-		...composeText(tnnBasedInfo.section2),
+			text('5 \u2014 Cultural Context Summary', H1),
+			...composeText(tnnBasedInfo.section2),
 
-		text('6 \u2014 Contextual Images', H1),
-		...composeText(tnnBasedInfo.section3),
+			text('6 \u2014 Contextual Images', H1),
+			...composeText(tnnBasedInfo.section3),
 
-		text('7 \u2014 Consultant / Pastoral Notes', H1),
-		...composeText(tnnBasedInfo.section4),
-	],
+			text('7 \u2014 Consultant / Pastoral Notes', H1),
+			...composeText(tnnBasedInfo.section4),
+		],
+	}
+
+	const pdfMaker = new PdfMaker()
+	pdfMaker.registerFont(await Bun.file('fonts/Times New Roman.ttf').arrayBuffer())
+
+	await Bun.write(Bun.stdout, await pdfMaker.makePdf(doc))
 }
-
-const pdfMaker = new PdfMaker()
-pdfMaker.registerFont(await Bun.file('fonts/Times New Roman.ttf').arrayBuffer())
-
-await Bun.write(Bun.stdout, await pdfMaker.makePdf(doc))
+else {
+	console.error(`Bad output document type: ${input.outputDocument}`)
+}
