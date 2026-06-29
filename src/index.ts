@@ -51,7 +51,7 @@ async function getAquiferContentIds(params): Promise<number[]> {
 		endVerse: params.verseNo
 	})
 	const response = await aquiferFetch('/resources/search', queryParams)
-	validateHttpResponse(response);
+	validateHttpResponse(response)
 	return (await response.json()).items.map(({id}) => id)
 }
 
@@ -125,13 +125,13 @@ const usfmBookCodeByBookName = [
 	{ key: '3 John', value: '3JN' },
 	{ key: 'Jude', value: 'JUD' },
 	{ key: 'Revelation', value: 'REV' }
-];
+]
 
 // content access
 
 async function getSource(params): Promise<string> {
 	const response = await fetch(`https://targets.tabitha.bible/${params.lwcName}/${params.bookName}/${params.chapterNo}/${params.verseNo}`)
-	validateHttpResponse(response);
+	validateHttpResponse(response)
 	const json = await response.json()
 	return json.filter(({ audience, text }) => { return audience == 'Unchurched Adults' })[0].text
 }
@@ -143,13 +143,14 @@ async function getQuestions(params): Promise<string[]> {
 			mtt_level: params.mttLevel,
 			lwc: params.lwcName,
 			show_english: params.showEnglish,
-			show_note_sources: params.showNoteSources
+			show_note_sources: params.showNoteSources,
+			sensitivity: params.sensitivity
 		}),
 	})
 	const response = await fetch(`https://copilot-dev.tabitha.bible/${params.bookName}/${params.chapterNo}/${params.verseNo}?${queryParams.toString()}`)
-	validateHttpResponse(response);
+	validateHttpResponse(response)
 	const json = await response.json()
-	return json.cautions.map(({ note, source }) => note)
+	return json.notes.map(({ meaning, check, trigger }) => meaning + ' ' + check)
 }
 
 async function getTnnBasedInfo(params): Promise<any> {
@@ -160,7 +161,7 @@ async function getTnnBasedInfo(params): Promise<any> {
 			"api-key": process.env.API_KEY_AQUIFER,
 		},
 	})
-	validateHttpResponse(response);
+	validateHttpResponse(response)
 	const prompt = await response.text()
 
 	const systemPrompt = await Bun.file('prompts/tnn-system.txt').text()

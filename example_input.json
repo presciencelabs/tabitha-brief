@@ -6,16 +6,16 @@
 	"outputDocument": "proofOfConcept",
 	"lwcName": "English",
 	"mttLevel": "high_school",
+	"sensitivity": 2,
 	"showEnglish": true,
 	"showNoteSources": false,
 
 	"vernacularProfile": {
-		"rhetorical_questions": true,
 		"clusivity": true,
-		"passive": true,
 		"dual": true,
-		"trial": true,
+		"trial": false,
+		"passive": false,
 		"honorifics": true,
-		"indirect_speech": true
+		"closing_quotation_frame": false
 	}
 }
