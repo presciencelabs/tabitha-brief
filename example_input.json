@@ -1,10 +1,13 @@
 {
+	"outputDocument": "verbose",
+	"outputFormat": "docx",
+	"rigorMode": "HIGH",
+
 	"bookName": "Titus",
 	"chapterNo": 2,
-	"verseNo": 11,
+	"verseNo": 14,
 
-	"outputDocument": "proofOfConcept",
-	"lwcName": "English",
+	"lwcName": "Indonesian",
 	"mttLevel": "high_school",
 	"sensitivity": 2,
 	"showEnglish": true,
