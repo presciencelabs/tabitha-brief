@@ -2,7 +2,7 @@ import { TemplateHandler } from 'easy-template-x'
 import { GoogleGenAI } from '@google/genai'
 
 // set to true to use hardcoded content instead of hitting web services (for development)
-const offline = false
+const offline = !false
 
 // http utilities
 
@@ -548,6 +548,39 @@ if (input.outputFormat == 'docx') {
 	const output = await handler.process(template, patches)
 
 	await Bun.write(Bun.stdout, output)
+}
+else if (input.outputFormat == 'usfm') {
+	if (input.outputDocument == 'production') {
+		let items = []
+		if (input.chapterNo == 1)
+			items.push(`\\id ${usfmBookCodeByBookName.filter(pair => pair.key == input.bookName)}\n`)
+		if (input.verseNo == 1)
+			items.push(`\\c ${input.chapterNo}\n`)
+		items.push(`\\v ${input.verseNo} ${patches.sourceBody}\n`)
+		items.push(`\\s ${patches.notesHeading}\n`)
+		for (const question of patches.notes)
+			items.push(`\\lex ${question.name} — ${question.text}\n`)
+		items.push(`\\s ${patches.tnnHeading}\n`)
+		if (patches.retainedNone)
+			items.push(`\\lex ${patches.retainedNoneText}\n`)
+		for (const retainedNote of patches.retainedNotes)
+			items.push(`\\lex ${retainedNote.text}\n`)
+		items.push(`\\s ${patches.contextHeading}\n`)
+		for (const contextNote of patches.contextNotesCultural)
+			items.push(`\\lex ${contextNote.title} — ${contextNote.text}\n`)
+		for (const contextNote of patches.contextNotesBackground)
+			items.push(`\\lex ${contextNote.title} — ${contextNote.text}\n`)
+		items.push(`\\s ${patches.imagesHeading}\n`)
+		for (const imageNote of patches.imageNotes)
+			items.push(`\\lex ${imageNote.title}\n`)
+		items.push(`\\s ${patches.consultantHeading}\n`)
+		for (const consultantNote of patches.consultantNotes)
+			items.push(`\\lex ${consultantNote.text}\n`)
+		await Bun.write(Bun.stdout, items.join(''))
+	}
+	else {
+		console.error(`USFM output format does not support this document: ${input.outputDocument}`)
+	}
 }
 else {
 	console.error(`Bad output format: ${input.outputFormat}`)
