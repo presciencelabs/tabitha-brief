@@ -1,11 +1,13 @@
 {
-	"outputDocument": "verbose",
-	"outputFormat": "docx",
+	"outputDocument": "production",
+	"outputFormat": "usfm",
 	"rigorMode": "HIGH",
 
 	"bookName": "Titus",
 	"chapterNo": 2,
 	"verseNo": 14,
+	"thruChapterNo": 3,
+	"thruVerseNo": 1,
 
 	"lwcName": "Indonesian",
 	"mttLevel": "high_school",

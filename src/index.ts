@@ -168,6 +168,12 @@ const usfmBookCodeByBookName = [
 
 // content access
 
+function getNumVersesInChapter(bookName: string, chapterNo: number): number {
+	return [
+		{ name: 'Titus', versesInChapter: [16, 15, 15] }
+	].filter(book => book.name == bookName)[0].versesInChapter[chapterNo - 1]
+}
+
 async function getCopilotBasedInfo(params): Promise<any> {
 	if (offline)
 		return { "verse": { "book": "Titus", "chapter": 2, "verse": 14 }, "english_text": "(Literal) Jesus Christ gave himself for us to redeem us from the power of all evil actions and cause us to become pure for him. (Dynamic) Jesus Christ died for us to redeem us from the power of all evil actions and cause us to become pure for him. (End of Alternates) He did this so that we would belong to him and we would eagerly desire to do good things.", "lwc_text": "(Terjemahan Harafiah) Yesus Kristus memberi diri-Nya sendiri untuk kita untuk menebus kita dari kuasa semua tindakan jahat dan untuk menjadikan kita murni untuk-Nya. (Terjemahan Dinamis) Yesus Kristus mati untuk kita untuk menebus kita dari kuasa semua tindakan jahat dan untuk menjadikan kita murni untuk-Nya. (Akhir Alternatif) Dia melakukan hal ini supaya kita menjadi milik-Nya dan supaya kita ingin dengan semangat melakukan hal-hal yang baik.", "notes": [{ "meaning": "Kata \"kita\" dalam bagian ini merujuk kepada penulis dan juga menyertakan para pembaca atau pendengar.", "check": "Pertimbangkan apakah kata ganti yang Anda gunakan dalam terjemahan menyertakan pembaca sebagai bagian dari kelompok tersebut.", "trigger": { "name": "Noun Person", "node_id": "0.3.0", "flags": [{ "name": "Noun Person", "value": "First Inclusive", "encoding_anchor": { "node_id": "0.3.0", "category": "Noun", "concept": "Paul-A", "person": "First Inclusive", "noun_index": "3" }, "weight": 3 }], "weight": 3, "prompt": "First Inclusive means that the reader/listener is included when the writer/speaker says \"we/us\".\n\t\t\t\t\tDO NOT say \"if your language has an inclusive/exclusive distinction\"." } }, { "meaning": "Yesus memberikan diri-Nya sendiri dengan maksud atau tujuan untuk menebus kita.", "check": "Pertimbangkan apakah hubungan tujuan antara tindakan memberikan diri dan penebusan ini diungkapkan dengan tepat dalam terjemahan Anda.", "trigger": { "name": "Intent/Result", "node_id": "0.4.0", "flags": [{ "name": "Intent/Result", "value": "Intent", "encoding_anchor": { "node_id": "0.4.0", "category": "Adposition", "event": "give-C", "result": "save-A" }, "weight": 4 }], "weight": 4 } }, { "meaning": "Teks asli sebenarnya hanya menyebutkan \"tindakan jahat\", tetapi hal ini dapat dipahami sebagai \"kuasa tindakan jahat\".", "check": "Pertimbangkan cara mana yang lebih jelas dalam bahasa Anda.", "trigger": { "name": "Metonymy", "node_id": "0.4.4.3", "flags": [{ "name": "Metonymy", "value": "power-A of action-A", "encoding_anchor": { "node_id": "0.4.4.3", "category": "Noun Phrase", "whole": "action-A", "part": "power-A", "metonymy_type": "Dynamic Expansion (Metonymy)" }, "weight": 5 }], "weight": 5, "prompt": "For the meaning, explain that the original text simply contains {whole}, but can be understood as {part} {whole}. For the check, write something like \"Consider which way is clearer in your language.\"" } }, { "meaning": "Kematian Yesus Kristus bagi kita dilakukan dengan maksud atau tujuan untuk menebus kita.", "check": "Pertimbangkan apakah hubungan tujuan antara kematian-Nya dan penebusan kita dinyatakan dengan jelas dalam terjemahan Anda.", "trigger": { "name": "Intent/Result", "node_id": "1.3.0", "flags": [{ "name": "Intent/Result", "value": "Intent", "encoding_anchor": { "node_id": "1.3.0", "category": "Adposition", "event": "die-A", "result": "save-A" }, "weight": 4 }], "weight": 4 } }, { "meaning": "Yesus melakukan semua tindakan tersebut dengan maksud atau tujuan agar kita menjadi milik-Nya.", "check": "Pertimbangkan apakah hubungan tujuan ini tersampaikan dengan baik dalam terjemahan Anda.", "trigger": { "name": "Intent/Result", "node_id": "2.3.0", "flags": [{ "name": "Intent/Result", "value": "Intent", "encoding_anchor": { "node_id": "2.3.0", "category": "Adposition", "event": "do-A", "result": "belong-A" }, "weight": 4 }], "weight": 4 } }] }
@@ -471,111 +477,130 @@ function formatVerdict(verdict: any) {
 
 // main
 
-const input = await Bun.stdin.json()
-const copilotBasedInfo = await getCopilotBasedInfo(input)
-const tbtaSource = copilotBasedInfo.lwc_text
-const copilotQuestions = copilotBasedInfo.notes
-const tnnBasedInfo = await getTnnBasedInfo(input, tbtaSource, JSON.stringify(copilotQuestions))
-const readerLanguage = input.outputDocument == 'verbose' ? 'English' : input.lwcName
-const patches = await translateJson({
-	passageReference: `${input.bookName} ${input.chapterNo}:${input.verseNo}`,
-	promptPreamble: markForTranslation(`${input.outputDocument == 'verbose' ? 'white-box (full audit)' : input.outputDocument == 'production' ? 'production (field)' : input.outputDocument} under prompt`, readerLanguage),
-	promptVersion: 'v11',
-	pagePreamble: markForTranslation('page', readerLanguage),
-	rigorMode: input.rigorMode,
-	lwcName: markForTranslation(input.lwcName, readerLanguage),
-	flagsHeading: markForTranslation('SECTION 1 — PROVENANCE FLAGS', readerLanguage),
-	flagNotes: copilotQuestions.flatMap(question =>
-		question.trigger.flags.map(flag => ({
-			title: question.trigger.name,
-			weight: formatWeight(question.trigger.weight),
-			trace: `node ${question.trigger.node_id}  ·  ${flag.encoding_anchor.category}  ·  concept: ${flag.encoding_anchor.concept}  ·  index ${flag.encoding_anchor.noun_index}  ·  value: ${flag.value}`,
-			lwcText: `${question.meaning} ${question.check}`,
-			btText: markForTranslation(`${question.meaning} ${question.check}`, 'English', input.lwcName)
+async function getPatches(input: any): Promise<any> {
+	const copilotBasedInfo = await getCopilotBasedInfo(input)
+	const tbtaSource = copilotBasedInfo.lwc_text
+	const copilotQuestions = copilotBasedInfo.notes
+	const tnnBasedInfo = await getTnnBasedInfo(input, tbtaSource, JSON.stringify(copilotQuestions))
+	const readerLanguage = input.outputDocument == 'verbose' ? 'English' : input.lwcName
+	return await translateJson({
+		passageReference: `${input.bookName} ${input.chapterNo}:${input.verseNo}`,
+		promptPreamble: markForTranslation(`${input.outputDocument == 'verbose' ? 'white-box (full audit)' : input.outputDocument == 'production' ? 'production (field)' : input.outputDocument} under prompt`, readerLanguage),
+		promptVersion: 'v11',
+		pagePreamble: markForTranslation('page', readerLanguage),
+		rigorMode: input.rigorMode,
+		lwcName: markForTranslation(input.lwcName, readerLanguage),
+		flagsHeading: markForTranslation('SECTION 1 — PROVENANCE FLAGS', readerLanguage),
+		flagNotes: copilotQuestions.flatMap(question =>
+			question.trigger.flags.map(flag => ({
+				title: question.trigger.name,
+				weight: formatWeight(question.trigger.weight),
+				trace: `node ${question.trigger.node_id}  ·  ${flag.encoding_anchor.category}  ·  concept: ${flag.encoding_anchor.concept}  ·  index ${flag.encoding_anchor.noun_index}  ·  value: ${flag.value}`,
+				lwcText: `${question.meaning} ${question.check}`,
+				btText: markForTranslation(`${question.meaning} ${question.check}`, 'English', input.lwcName)
+			}))
+		),
+		sourceHeading: markForTranslation('SECTION 2 — TBTA LWC VERSE', readerLanguage),
+		sourceBody: tbtaSource,
+		notesHeading: markForTranslation('SECTION 3 — TaBiThA SEMANTIC NOTES', readerLanguage),
+		notes: copilotQuestions.map((question, index) => ({
+			ordinal: index + 1,
+			name: markForTranslation(question.trigger.name, readerLanguage),
+			text: question.meaning + ' ' + question.check
+		})),
+		tnnHeading: markForTranslation('SECTION 4 — SIL TRANSLATOR NOTES', readerLanguage),
+		tnnTraces: tnnBasedInfo.section4.sourcePointabilityRows.filter(row => row.verdict.type != 'RETAIN').map(row => ({
+			note: row.note,
+			function: row.function,
+			lwcSpan1: row.lwcSpan != 'NOT IN LWC' ? `“${row.lwcSpan}”` : '',
+			lwcSpan2: row.lwcSpan == 'NOT IN LWC' ? row.lwcSpan : '',
+			verdict1: row.verdict.type == 'CUT' ? formatVerdict(row.verdict) : '',
+			verdict2: !(row.verdict.type == 'CUT' || row.verdict.type == 'SECTION 5') ? formatVerdict(row.verdict) : '',
+			verdict3: row.verdict.type == 'SECTION 5' ? formatVerdict(row.verdict) : '',
+		})),
+		retainedNone: tnnBasedInfo.section4.sourcePointabilityRows.filter(row => row.verdict.type == 'RETAIN').length == 0,
+		retainedNoneText: markForTranslation('No mechanics notes were retained for this passage.', readerLanguage),
+		retainedNotes: tnnBasedInfo.section4.notes.map(row => ({
+			text: markForTranslation(row.text, readerLanguage)
+		})),
+		excludedNotes: tnnBasedInfo.section4.excluded.map(row => ({
+			text: `${row.note}: ${row.reason}`
+		})),
+		contextHeading: markForTranslation('SECTION 5 — CULTURAL & CONTEXTUAL BACKGROUND', readerLanguage),
+		contextNotesCulturalHeading: markForTranslation('Cultural', readerLanguage),
+		contextNotesCultural: tnnBasedInfo.section5.cultural.map(row => ({
+			title: markForTranslation(row.term, readerLanguage),
+			text: markForTranslation(row.summary, readerLanguage)
+		})),
+		contextNotesBackgroundHeading: markForTranslation('Background', readerLanguage),
+		contextNotesBackground: tnnBasedInfo.section5.background.map(row => ({
+			title: markForTranslation(row.term, readerLanguage),
+			text: markForTranslation(row.summary, readerLanguage)
+		})),
+		imagesHeading: markForTranslation('SECTION 6 — IMAGE KEYWORDS', readerLanguage),
+		imageNotes: tnnBasedInfo.section6.keywords.map(keyword => ({
+			title: keyword
+		})),
+		consultantHeading: markForTranslation('SECTION 7 — CONSULTANT DECISION', readerLanguage),
+		consultantNotes: tnnBasedInfo.section7.decisions.length == 0 ? [{ text: markForTranslation('No Section 7 candidate was identified.', readerLanguage) }] : tnnBasedInfo.section7.decisions.map(decision => ({
+			text: `${markForTranslation(decision.status, readerLanguage)} — ${markForTranslation(decision.text, readerLanguage)}`
 		}))
-	),
-	sourceHeading: markForTranslation('SECTION 2 — TBTA LWC VERSE', readerLanguage),
-	sourceBody: tbtaSource,
-	notesHeading: markForTranslation('SECTION 3 — TaBiThA SEMANTIC NOTES', readerLanguage),
-	notes: copilotQuestions.map((question, index) => ({
-		ordinal: index + 1,
-		name: markForTranslation(question.trigger.name, readerLanguage),
-		text: question.meaning + ' ' + question.check
-	})),
-	tnnHeading: markForTranslation('SECTION 4 — SIL TRANSLATOR NOTES', readerLanguage),
-	tnnTraces: tnnBasedInfo.section4.sourcePointabilityRows.filter(row => row.verdict.type != 'RETAIN').map(row => ({
-		note: row.note,
-		function: row.function,
-		lwcSpan1: row.lwcSpan != 'NOT IN LWC' ? `“${row.lwcSpan}”` : '',
-		lwcSpan2: row.lwcSpan == 'NOT IN LWC' ? row.lwcSpan : '',
-		verdict1: row.verdict.type == 'CUT' ? formatVerdict(row.verdict) : '',
-		verdict2: !(row.verdict.type == 'CUT' || row.verdict.type == 'SECTION 5') ? formatVerdict(row.verdict) : '',
-		verdict3: row.verdict.type == 'SECTION 5' ? formatVerdict(row.verdict) : '',
-	})),
-	retainedNone: tnnBasedInfo.section4.sourcePointabilityRows.filter(row => row.verdict.type == 'RETAIN').length == 0,
-	retainedNoneText: markForTranslation('No mechanics notes were retained for this passage.', readerLanguage),
-	retainedNotes: tnnBasedInfo.section4.notes.map(row => ({
-		text: markForTranslation(row.text, readerLanguage)
-	})),
-	excludedNotes: tnnBasedInfo.section4.excluded.map(row => ({
-		text: `${row.note}: ${row.reason}`
-	})),
-	contextHeading: markForTranslation('SECTION 5 — CULTURAL & CONTEXTUAL BACKGROUND', readerLanguage),
-	contextNotesCulturalHeading: markForTranslation('Cultural', readerLanguage),
-	contextNotesCultural: tnnBasedInfo.section5.cultural.map(row => ({
-		title: markForTranslation(row.term, readerLanguage),
-		text: markForTranslation(row.summary, readerLanguage)
-	})),
-	contextNotesBackgroundHeading: markForTranslation('Background', readerLanguage),
-	contextNotesBackground: tnnBasedInfo.section5.background.map(row => ({
-		title: markForTranslation(row.term, readerLanguage),
-		text: markForTranslation(row.summary, readerLanguage)
-	})),
-	imagesHeading: markForTranslation('SECTION 6 — IMAGE KEYWORDS', readerLanguage),
-	imageNotes: tnnBasedInfo.section6.keywords.map(keyword => ({
-		title: keyword
-	})),
-	consultantHeading: markForTranslation('SECTION 7 — CONSULTANT DECISION', readerLanguage),
-	consultantNotes: tnnBasedInfo.section7.decisions.length == 0 ? [{ text: markForTranslation('No Section 7 candidate was identified.', readerLanguage) }] : tnnBasedInfo.section7.decisions.map(decision => ({
-		text: `${markForTranslation(decision.status, readerLanguage)} — ${markForTranslation(decision.text, readerLanguage)}`
-	}))
-})
+	})
+}
+
+const input = await Bun.stdin.json()
 
 if (input.outputFormat == 'docx') {
 	const template = await Bun.file(`templates/${input.outputDocument}.docx`).arrayBuffer()
 
 	const handler = new TemplateHandler()
-	const output = await handler.process(template, patches)
+	const output = await handler.process(template, await getPatches(input))
 
 	await Bun.write(Bun.stdout, output)
 }
 else if (input.outputFormat == 'usfm') {
 	if (input.outputDocument == 'production') {
 		let items = []
-		if (input.chapterNo == 1)
-			items.push(`\\id ${usfmBookCodeByBookName.filter(pair => pair.key == input.bookName)}\n`)
-		if (input.verseNo == 1)
-			items.push(`\\c ${input.chapterNo}\n`)
-		items.push(`\\v ${input.verseNo} ${patches.sourceBody}\n`)
-		items.push(`\\s ${patches.notesHeading}\n`)
-		for (const question of patches.notes)
-			items.push(`\\lex ${question.name} — ${question.text}\n`)
-		items.push(`\\s ${patches.tnnHeading}\n`)
-		if (patches.retainedNone)
-			items.push(`\\lex ${patches.retainedNoneText}\n`)
-		for (const retainedNote of patches.retainedNotes)
-			items.push(`\\lex ${retainedNote.text}\n`)
-		items.push(`\\s ${patches.contextHeading}\n`)
-		for (const contextNote of patches.contextNotesCultural)
-			items.push(`\\lex ${contextNote.title} — ${contextNote.text}\n`)
-		for (const contextNote of patches.contextNotesBackground)
-			items.push(`\\lex ${contextNote.title} — ${contextNote.text}\n`)
-		items.push(`\\s ${patches.imagesHeading}\n`)
-		for (const imageNote of patches.imageNotes)
-			items.push(`\\lex ${imageNote.title}\n`)
-		items.push(`\\s ${patches.consultantHeading}\n`)
-		for (const consultantNote of patches.consultantNotes)
-			items.push(`\\lex ${consultantNote.text}\n`)
+		let chapterNo = input.chapterNo
+		let verseNo = input.verseNo
+		let numVersesInChapter = getNumVersesInChapter(input.bookName, chapterNo)
+		const thruChapterNo = input.thruChapterNo ?? chapterNo
+		const thruVerseNo = input.thruVerseNo ?? verseNo
+		while (chapterNo < thruChapterNo || (chapterNo == thruChapterNo && verseNo <= thruVerseNo)) {
+			input.chapterNo = chapterNo
+			input.verseNo = verseNo
+			const patches = await getPatches(input)
+
+			if (verseNo == 1) {
+				if (chapterNo == 1)
+					items.push(`\\id ${usfmBookCodeByBookName.filter(pair => pair.key == input.bookName)[0].value}\n`)
+				items.push(`\\c ${chapterNo}\n`)
+			}
+			items.push(`\\v ${verseNo} ${patches.sourceBody}\n`)
+			items.push(`\\s ${patches.notesHeading}\n`)
+			for (const question of patches.notes)
+				items.push(`\\lex ${question.name} — ${question.text}\n`)
+			items.push(`\\s ${patches.tnnHeading}\n`)
+			if (patches.retainedNone)
+				items.push(`\\lex ${patches.retainedNoneText}\n`)
+			for (const retainedNote of patches.retainedNotes)
+				items.push(`\\lex ${retainedNote.text}\n`)
+			items.push(`\\s ${patches.contextHeading}\n`)
+			for (const contextNote of patches.contextNotesCultural)
+				items.push(`\\lex ${contextNote.title} — ${contextNote.text}\n`)
+			for (const contextNote of patches.contextNotesBackground)
+				items.push(`\\lex ${contextNote.title} — ${contextNote.text}\n`)
+			items.push(`\\s ${patches.imagesHeading}\n`)
+			for (const imageNote of patches.imageNotes)
+				items.push(`\\lex ${imageNote.title}\n`)
+			items.push(`\\s ${patches.consultantHeading}\n`)
+			for (const consultantNote of patches.consultantNotes)
+				items.push(`\\lex ${consultantNote.text}\n`)
+			while (++verseNo > numVersesInChapter) {
+				verseNo = 0
+				numVersesInChapter = getNumVersesInChapter(input.bookName, ++chapterNo)
+			}
+		}
 		await Bun.write(Bun.stdout, items.join(''))
 	}
 	else {
