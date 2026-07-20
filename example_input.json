@@ -16,11 +16,19 @@
 	"showNoteSources": false,
 
 	"vernacularProfile": {
-		"clusivity": true,
-		"dual": true,
-		"trial": false,
-		"passive": false,
+		"multiple_past": true,
+		"multiple_future": true,
+		"noun_number": [ "Dual", "Trial", "Quadrial" ],
+		"noun_proximity": [
+			"Near Speaker and Listener",
+			"Near Speaker",
+			"Near Listener",
+			"Remote out of Sight"
+		],
+		"noun_clusivity": true,
+		"passive": "none",
+		"rhetorical_questions": false,
 		"honorifics": true,
-		"closing_quotation_frame": false
+		"speech_formula_position": "either"
 	}
 }

@@ -2,7 +2,7 @@ import { TemplateHandler } from 'easy-template-x'
 import { GoogleGenAI } from '@google/genai'
 
 // set to true to use hardcoded content instead of hitting web services (for development)
-const offline = !false
+const offline = false
 
 // http utilities
 
